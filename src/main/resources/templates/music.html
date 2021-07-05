@@ -43,12 +43,11 @@
         var table = layui.table;
         //温馨提示：默认由前端自动合计当前行数据。从 layui 2.5.6 开始： 若接口直接返回了合计行数据，则优先读取接口合计行数据。
         //详见：https://www.layui.com/doc/modules/table.html#totalRow
-        tableLink=table.render({
+        tableLink = table.render({
             elem: '#test'
             , url: '/music/list'
             , toolbar: '#toolbarDemo'
             , title: '数据表'
-            ,where:{id:name}
             , totalRow: true
             , cols: [
                 [
@@ -58,7 +57,7 @@
                     , {field: 'author', title: '作者', width: 100, edit: 'text'}
                     , {field: 'listid', title: '歌单ID', width: 100, sort: true}
                     , {
-                    field: 'musicurl', title: '歌曲url', width:240, edit: 'text', templet:
+                    field: 'musicurl', title: '歌曲url', width: 240, edit: 'text', templet:
                         function (res) {
                             return '<em>' + res.musicurl + '</em>'
                         }
@@ -73,7 +72,6 @@
         });
 
         //工具栏事件
-
         table.on('toolbar(test)', function (obj) {
             var checkStatus = table.checkStatus(obj.config.id);
             switch (obj.event) {
@@ -87,15 +85,17 @@
                 case 'search':
                     var demoReload = $('#demoReload');
                     table.reload('testReload', {
-                        page: {
+                        url: 'search'
+                        , page: {
                             curr: 1 //重新从第 1 页开始
-                        },
-                        where:{
-                            id:demoReload.val()
+                        }
+                        , where: {
+                            key: demoReload.val()
                         }
                     })
                     break;
-
+                    case 'more':
+                        break;
             }
         })
 
@@ -149,6 +149,7 @@
                     , id: 'updateCheckListID'
                 }]
                 , click: function (obj) {
+
                     var checkStatus = layui.table.checkStatus('testReload');
                     var data = checkStatus.data;
                     var dataJ = JSON.stringify(data);
@@ -160,8 +161,10 @@
                             layer.open({
                                 type: 1
                                 , title: "添加歌曲"
+                                , skin: 'layui-layer-lan'
+                                , shadeClose: true
+                                , closeBtn: 0
                                 , area: '300px;'
-                                , shade: 0.8
                                 , id: 'LAY_layuipro' //设定一个id，防止重复弹出
                                 , btn: ['确定', '取消']
                                 , btnAlign: 'c'
@@ -225,6 +228,7 @@
                 }
             });
         })
+
     });
 </script>
 

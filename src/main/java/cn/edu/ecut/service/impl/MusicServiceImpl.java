@@ -6,7 +6,6 @@ import cn.edu.ecut.service.MusicService;
 import cn.edu.ecut.vo.DataVO;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,13 +48,14 @@ public class MusicServiceImpl extends ServiceImpl<MusicMapper, Music> implements
 
         dataVO.setCode(0);
         dataVO.setMsg("");
+        QueryWrapper<Music> xwrapper=new QueryWrapper<>();
+        xwrapper.and(
+                wrapper -> wrapper.like("name",key).or().like("musicid",key)
+                        .or().like("listid",key)
+        );
 
-        QueryWrapper<Music> wrapper= Wrappers.query();
-        wrapper.like("name",key);
-        //分页
         IPage<Music> musicPage = new Page<Music>(page, limit);
-        IPage<Music> res = musicMapper.selectPage(musicPage, wrapper);
-
+        IPage<Music> res = musicMapper.selectPage(musicPage, xwrapper);
         dataVO.setCount(res.getTotal());
         List<Music> list = res.getRecords();
 

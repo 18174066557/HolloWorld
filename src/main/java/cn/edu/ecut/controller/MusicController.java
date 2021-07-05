@@ -38,6 +38,13 @@ public class MusicController {
         return musicService.findData(page,limit);
     }
 
+    @GetMapping("/search")
+    @ResponseBody
+    public DataVO<Music> search(Integer page, Integer limit,String key) {
+        System.out.println(key);
+         return musicService.search(page,limit,key);
+    }
+
     @DeleteMapping("/delete")
     @ResponseBody
     public void delete(Music music){
