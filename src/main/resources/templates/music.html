@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>music</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="layui/css/layui.css" th:href="@{/layui/css/layui.css}" media="all">
+    <!-- 注意：如果你直接复制所有代码到本地，上述css路径需要改成你本地的 -->
+    <script src="layui/layui.js" th:src="@{/layui/layui.js}" charset="utf-8"></script>
+    <!-- 注意：如果你直接复制所有代码到本地，上述 JS 路径需要改成你本地的 -->
+    <script type="text/javascript" src="/webjars/jquery/3.1.1/jquery.min.js"></script>
+
+</head>
+<body>
+
+<table class="layui-hide" id="test" lay-filter="test"></table>
+
+<script type="text/html" id="toolbarDemo">
+    <div>
+        <button class="layui-btn layui-btn-sm" lay-event="getCheckLength">获取选中数目</button>
+        <button class="layui-btn layui-btn-sm" lay-event="isAll">验证是否全选</button>
+
+        <button class="layui-btn demo1 layui-btn-sm">
+            下拉菜单
+            <i class="layui-icon layui-icon-down layui-font-8"></i>
+        </button>
+        <div class="layui-inline">
+            <input class="layui-input" placeholder="请输入搜索id" name="id" id="demoReload" autocomplete="off">
+        </div>
+        <button class="layui-btn layui-btn-sm" id="search" lay-event="search">search</button>
+    </div>
+</script>
+<script type="text/html" id="barDemo">
+    <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+</script>
+
+<script>
+
+    layui.use('table', function () {
+        var table = layui.table;
+        //温馨提示：默认由前端自动合计当前行数据。从 layui 2.5.6 开始： 若接口直接返回了合计行数据，则优先读取接口合计行数据。
+        //详见：https://www.layui.com/doc/modules/table.html#totalRow
+        tableLink=table.render({
+            elem: '#test'
+            , url: '/music/list'
+            , toolbar: '#toolbarDemo'
+            , title: '数据表'
+            ,where:{id:name}
+            , totalRow: true
+            , cols: [
+                [
+                    {type: 'checkbox', fixed: 'left', totalRowText: '合计'}
+                    , {field: 'musicid', title: '歌曲ID', width: 80, fixed: 'left', unresize: true, sort: true}
+                    , {field: 'name', title: '歌曲名', width: 200, edit: 'text'}
+                    , {field: 'author', title: '作者', width: 100, edit: 'text'}
+                    , {field: 'listid', title: '歌单ID', width: 100, sort: true}
+                    , {
+                    field: 'musicurl', title: '歌曲url', width:240, edit: 'text', templet:
+                        function (res) {
+                            return '<em>' + res.musicurl + '</em>'
+                        }
+                }
+                    , {field: 'imageurl', title: '图片url', width: 240, edit: 'text',}
+                    , {field: 'time', title: '时长', width: 100, edit: 'text',}
+                    , {fixed: 'right', title: '操作', toolbar: '#barDemo', width: 150}
+                ]
+            ]
+            , id: 'testReload'
+            , page: true
+        });
+
+        //工具栏事件
+
+        table.on('toolbar(test)', function (obj) {
+            var checkStatus = table.checkStatus(obj.config.id);
+            switch (obj.event) {
+                case 'getCheckLength':
+                    var data = checkStatus.data;
+                    layer.msg('选中了：' + data.length + ' 个');
+                    break;
+                case 'isAll':
+                    layer.msg(checkStatus.isAll ? '全选' : '未全选')
+                    break;
+                case 'search':
+                    var demoReload = $('#demoReload');
+                    table.reload('testReload', {
+                        page: {
+                            curr: 1 //重新从第 1 页开始
+                        },
+                        where:{
+                            id:demoReload.val()
+                        }
+                    })
+                    break;
+
+            }
+        })
+
+        //监听行工具事件
+        table.on('tool(test)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'del') {
+                layer.confirm('真的删除行么', function (index) {
+                    obj.del();
+                    layer.close(index);
+                    $.ajax({
+                        url: 'delete',
+                        data: data,
+                        dataType: 'json',
+                        type: 'delete',
+                        success(data) {
+                            console.log("delete success")
+                        }
+                    })
+                });
+            } else if (obj.event === 'edit') {
+                layer.alert('编辑行：<br>' + JSON.stringify(data))
+                $.ajax({
+                    url: 'update',
+                    data: data,
+                    dataType: 'json',
+                    type: 'put',
+                    success(data) {
+                        console.log("update success")
+                    },
+                })
+            }
+        })
+
+        layui.use(['dropdown'], function () {
+            var dropdown = layui.dropdown
+            $ = layui.jquery;
+            dropdown.render({
+                elem: '.demo1'
+                , data: [{
+                    title: '获取选中行数据'
+                    , id: 'getCheckData'
+                }, {
+                    title: '添加'
+                    , id: 'add'
+                }, {
+                    title: '删除选中'
+                    , id: 'deletecheck'
+                }, {
+                    title: '修改选中的歌单ID'
+                    , id: 'updateCheckListID'
+                }]
+                , click: function (obj) {
+                    var checkStatus = layui.table.checkStatus('testReload');
+                    var data = checkStatus.data;
+                    var dataJ = JSON.stringify(data);
+                    switch (obj.id) {
+                        case 'getCheckData':
+                            alert(dataJ)
+                            break;
+                        case 'add':
+                            layer.open({
+                                type: 1
+                                , title: "添加歌曲"
+                                , area: '300px;'
+                                , shade: 0.8
+                                , id: 'LAY_layuipro' //设定一个id，防止重复弹出
+                                , btn: ['确定', '取消']
+                                , btnAlign: 'c'
+                                , moveType: 1 //拖拽模式，0或者1
+                                , content: $('#window')
+                                , yes: function (layero, index) {
+                                    $('#window').css('display', 'none');
+                                    var pmusic = {
+                                        "musicid": $('#pid').val()
+                                        , "name": $('#pname').val()
+                                        , "author": $('#pauthor').val()
+                                        , "listid": $('#plistid').val()
+                                        , "imageurl": $('#pimageurl').val()
+                                        , "musicurl": $('#pmusicurl').val()
+                                        , "time": $('#time').val()
+                                    }
+                                    $.ajax({
+                                        url: 'save',
+                                        data: pmusic,
+                                        dataType: 'json',
+                                        type: 'post',
+                                    })
+                                    layer.closeAll()
+                                }
+                                , btn2: function () {
+                                    $('#window').css('display', 'none');
+                                }
+                            });
+                            break;
+                        case 'deletecheck':
+                            $.ajax({
+                                url: 'deletecheck',
+                                data: 'list=' + dataJ,
+                                type: 'delete',
+                                success(data) {
+                                    console.log("deletecheck success")
+                                },
+                            })
+                            table.reload('testReload', {
+                                page: {
+                                    curr: 1 //重新从第 1 页开始
+                                }
+                            })
+                            break;
+                        case 'updateCheckListID':
+                            $.ajax({
+                                url: 'deletecheck',
+                                data: 'list=' + dataJ,
+                                type: 'delete',
+                                success(data) {
+                                    console.log("updateCheckListID success")
+                                },
+                            })
+                            table.reload('testReload', {
+                                page: {
+                                    curr: 1 //重新从第 1 页开始
+                                }
+                            })
+                            break;
+                    }
+                }
+            });
+        })
+    });
+</script>
+
+<div class="site-text" style="margin: 5%; display: none" id="window" data-type="t">
+    <div class="layui-form-item">
+        <label class="layui-form-label">歌曲ID</label>
+        <div class="layui-input-block">
+            <input type="text" id="pid" name="pid" lay-verify="title" autocomplete="off" placeholder="请输入歌曲ID"
+                   class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">歌曲名</label>
+        <div class="layui-input-block">
+            <input type="text" id="pname" name="pname" lay-verify="title" autocomplete="off" placeholder="请输入歌曲名"
+                   class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">作者</label>
+        <div class="layui-input-block">
+            <input type="text" id="pauthor" name="pauthor" lay-verify="title" autocomplete="off" placeholder="请输入作者"
+                   class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">歌单ID</label>
+        <div class="layui-input-block">
+            <input type="number" id="plistid" name="plistID" lay-verify="title" autocomplete="off" placeholder="请输入歌单ID"
+                   class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">歌曲url</label>
+        <div class="layui-input-block">
+            <input type="text" id="pmusicurl" name="pmusicurl" lay-verify="title" autocomplete="off"
+                   placeholder="请输入歌曲url" class="layui-input">
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">图片url</label>
+        <div class="layui-input-block">
+            <input type="text" id="ppictrueurl" name="ppictrueurl" lay-verify="title" autocomplete="off"
+                   placeholder="请输入图片url" class="layui-input">
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <label class="layui-form-label">图片url</label>
+        <div class="layui-input-block">
+            <input type="text" id="time" name="ppictrueurl" lay-verify="title" autocomplete="off" placeholder="请输入歌曲时长"
+                   class="layui-input">
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
